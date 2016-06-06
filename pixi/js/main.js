@@ -1,6 +1,4 @@
 (function(){
-	var width = 800;
-	var height = 600;
 
 	var obj = [
 		{
@@ -45,10 +43,68 @@
 		this.index++;
 		return color;
 	};
+
+	/**
+	 * スクリーンオブジェクト
+	 * @constructor
+	 */
+	Screen = function(domId){
+		this.width = 800;
+		this.height = 600;
+		this.position = [];
+
+		// ステージを作る
+		this.stage = new PIXI.Stage(0x000000);
+
+		// レンダラーを作る
+		this.renderer = PIXI.autoDetectRenderer(this.width, this.height);
+
+		// レンダラーのviewをDOMに追加する
+		document.getElementById(domId).appendChild(this.renderer.view);
+
+	};
+
+	Screen.prototype.stageAdd = function(accessObject){
+		this.stage.addChild(accessObject.getPixiObject());
+	};
+
+	Screen.prototype.render = function(){
+		this.renderer.render(this.stage);   // 描画する
+
+	};
+
+	Screen.prototype.addForwardPosition = function(name, percentage){
+		this.position.push({
+			name : name,
+			area : (this.height * percentage / 100)
+		});
+	};
+
+	Screen.prototype.drawForwardArea = function(){
+		var areaY = 0;
+
+		for(var i = 0; i < this.position.length; i++){
+			// テキストオブジェクトを作る
+			var name = this.position[i].name;
+			var style = {font:'bold 14pt Arial', fill:'white'};
+			var textobj = new PIXI.Text(name, style);
+
+
+			textobj.position.x = 600;
+			textobj.position.y = areaY;
+			areaY += this.position[i].area;
+
+			// テキストオブジェクトをステージに乗せる
+			this.stage.addChild(textobj);
+		}
+	};
 	
 	
 	/**
 	 * Logオブジェクト
+	 *
+	 * ログを読み込む
+	 *
 	 * @param {type} log
 	 * @returns {main_L1.LogData}
 	 */
@@ -122,25 +178,7 @@
 		var graphicObj = [];
 		var colors = new Colors();
 
-		// ステージを作る
-//		var stage = new PIXI.Stage(0x000000);
-		var stage = new PIXI.Stage(0xffcccc);
-
-		// レンダラーを作る
-		var renderer = PIXI.autoDetectRenderer(width, height);
-
-		// レンダラーのviewをDOMに追加する
-		document.getElementById("pixiview").appendChild(renderer.view);
-
-//		// テキストオブジェクトを作る
-//		var word = "Hello World!";
-//		var style = {font:'bold 60pt Arial', fill:'white'};
-//		var textobj = new PIXI.Text(word, style);
-//		textobj.position.x = 60;
-//		textobj.position.y = height / 2;
-//
-//		// テキストオブジェクトをステージに乗せる
-//		stage.addChild(textobj);
+		var screen = new Screen("pixiview");
 
 		//LogDataの作成
 		var logData = new LogData(obj);
@@ -151,9 +189,16 @@
 			var ao = new AccessObject(0, i*50, colors.getColor(), obj[i]);
 			
 			graphicObj.push(ao);
-			stage.addChild(ao.getPixiObject());
+
+			screen.stageAdd(ao)
 		}
 
+		screen.addForwardPosition('aaa', 10);
+		screen.addForwardPosition('bbb', 10);
+		screen.addForwardPosition('ccc', 50);
+		screen.addForwardPosition('ddd', 10);
+		// エリア表示
+		screen.drawForwardArea();
 
 		// アニメーション関数を定義する
 		function animate(){
@@ -163,8 +208,8 @@
 			for(var j = 0; j < graphicObj.length; j++){
 				graphicObj[j].move();
 			}
-			
-			renderer.render(stage);   // 描画する
+			// 描画
+			screen.render();
 		}
 
 		// 次のアニメーションフレームでanimate()を呼び出してもらう
