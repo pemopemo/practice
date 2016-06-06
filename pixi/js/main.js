@@ -3,21 +3,27 @@
 	var log = [
 		{
 			from : "example.co.jp",
-			category : "A",
+			category : "ccc",
 			time : "1",
-			range : 10
+			range : 5
 		},
 		{
 			from : "test.com",
-			category : "B",
+			category : "ggg",
 			time : "1",
-			range : 20
+			range : 10
 		},
 		{
 			from : "sample.jp",
-			category : "A",
+			category : "mmm",
 			time : "2",
-			range : 10
+			range : 5
+		},
+		{
+			from : "test.jp",
+			category : "kkk",
+			time : "3",
+			range : 5
 		},
 	];
 	
@@ -75,7 +81,7 @@
 	Screen = function(domId, width, height, logData){
 		this.width = width;
 		this.height = height;
-		this.areaManager = new AreaManager(600, 0, 200, this.height);
+		this.areaManager = new AreaManager(this.width / 4 * 3, 0, 200, this.height);
 		this.accessObjectManager = new AccessObjectManager(logData, this.height);
 
 		// ステージを作る
@@ -108,10 +114,20 @@
 	};
 	
 	Screen.prototype.moveAccessObjects = function(){
+		var category = this.accessObjectManager.next();
+		var goalY;
+		if(category){
+			goalY = this.areaManager.getAssignArea(category)
+			this.accessObjectManager.setNextForward(goalY);
+		}else{
+//			alert("end!");
+		}
+
 		this.accessObjectManager.move();
 	};
 
-	
+
+
 	/**
 	 * 目的地となるエリア
 	 * @param {type} name
@@ -134,17 +150,15 @@
 
 		return this.textObject;
 	};
-	
+
 	ForwardArea.prototype.getPercentage = function(){
 		return this.percentage;
 	};
-	
-	ForwardArea.prototype.getX = function(){
-		return this.textObject.position.x;
-	};
+
 	ForwardArea.prototype.getY = function(){
 		return this.textObject.position.y;
 	};
+
 
 
 	/**
@@ -176,12 +190,22 @@
 		}
 	};
 	
-	AreaManager.prototype.adjustForwardArea = function(stage){
+	AreaManager.prototype.adjustForwardArea = function(){
 		var cell = this.position.height / this.forwardAreas.length;
 		
 		for(var i = 0; i < this.forwardAreas.length; i++){
 			this.forwardAreas[i].drawArea(this.position.x, cell * i);
 		}
+	};
+
+	AreaManager.prototype.getAssignArea = function(category){
+		for(var i = 0; i < this.forwardAreas.length; i++){
+			if(this.forwardAreas[i].name == category){
+				return this.forwardAreas[i].getY();
+			}
+		}
+
+		return null;
 	};
 	
 	
@@ -194,7 +218,7 @@
 	 * @param {type} log
 	 * @returns {main_L1.LogData}
 	 */
-	LogData = function(log){
+	LogObject = function(log){
 		this.log = log;
 		this.category = {};
 
@@ -206,8 +230,12 @@
 			}
 		}
 	};
-	LogData.prototype.getCategory = function(){
+	LogObject.prototype.getCategory = function(){
 		return this.category;
+	};
+
+	LogObject.prototype.logData = function(){
+		return this.log;
 	};
 	
 	
@@ -230,14 +258,14 @@
 		this.pixiObj.drawCircle(0, 0, info.range);
 		this.pixiObj.endFill();
 
-		this.forwardX = 2;
+		this.forwardX = 10;
 		this.forwardY = 0;
 		this.from = info.from;
 		this.category = info.category;
 	};
 	
 	AccessObject.prototype.move = function(){
-		if(this.pixiObj.position.x >= this.distance / 2){
+		if(this.pixiObj.position.x >= this.distance){
 			this.pixiObj.position.x = 0;
 		}
 
@@ -248,10 +276,16 @@
 	AccessObject.prototype.getPixiObject = function(){
 		return this.pixiObj;
 	};
-	
-	
+
+	AccessObject.prototype.setY = function(y){
+		this.pixiObj.position.y = y;
+	};
+
+
 	AccessObjectManager = function(logData, distance){
 		this.accessObjects = [];
+		this.current = 0;
+
 		var colors = new Colors();
 
 		// AccessObjectの生成
@@ -271,10 +305,23 @@
 	};
 
 	AccessObjectManager.prototype.move = function(){
-//		alert(this.accessObjects.length);
 		for(var i = 0; i < this.accessObjects.length; i++){
 			this.accessObjects[i].move();
 		}
+	};
+
+	AccessObjectManager.prototype.next = function(){
+//		console.log('current', this.current);
+		if(this.accessObjects.length  >= this.current + 1){
+			var target = this.accessObjects[this.current].category;
+			return target;
+		}else{
+			return null;
+		}
+	};
+	AccessObjectManager.prototype.setNextForward = function(goalY){
+		this.accessObjects[this.current].setY(goalY)
+		this.current++;
 	};
 
 	
@@ -286,12 +333,11 @@
 	 */
 	window.onload = function(){
 
-var graphicObj = []
 		//LogDataの作成
-		var logData = new LogData(log);
-		console.log(logData.getCategory());
+		var logObject = new LogObject(log);
+		console.log(logObject.getCategory());
 
-		var screen = new Screen("pixiview", 800, 600, logData);
+		var screen = new Screen("pixiview", window.innerWidth, window.innerHeight, logObject.logData());
 		
 		screen.stageAddAccessObject();
 
