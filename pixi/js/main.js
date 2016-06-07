@@ -1,6 +1,6 @@
 (function(){
 
-	var obj = [
+	var log = [
 		{
 			from : "example.co.jp",
 			category : "A",
@@ -45,12 +45,16 @@
 	Colors = function(){
 		this.index = 0;
 		this.colors = [
-			0xff00ff,
-			0xffff00,
-			0x00ffff,
-			0xff0000,
-			0x00ff00,
-			0x0000ff
+			0x1f77b4,
+			0xff7f0e,
+			0x2ca02c,
+			0xd62728,
+			0x9467bd,
+			0x8c564b,
+			0xe377c2,
+			0x7f7f7f,
+			0xbcbd22,
+			0x17becf
 		];		
 	};
 	Colors.prototype.getColor = function(){
@@ -60,16 +64,19 @@
 		return color;
 	};
 
+
+
+
 	/**
 	 * スクリーンオブジェクト
 	 * 全体的な描画を管理
 	 * @constructor
 	 */
-	Screen = function(domId){
-		this.width = 800;
-		this.height = 600;
+	Screen = function(domId, width, height, logData){
+		this.width = width;
+		this.height = height;
 		this.areaManager = new AreaManager(600, 0, 200, this.height);
-//		this.forwardAreas = [];
+		this.accessObjectManager = new AccessObjectManager(logData, this.height);
 
 		// ステージを作る
 		this.stage = new PIXI.Stage(0x000000);
@@ -79,16 +86,14 @@
 
 		// レンダラーのviewをDOMに追加する
 		document.getElementById(domId).appendChild(this.renderer.view);
-
 	};
 
-	Screen.prototype.stageAdd = function(accessObject){
-		this.stage.addChild(accessObject.getPixiObject());
+	Screen.prototype.stageAddAccessObject = function(){
+		this.accessObjectManager.stageAdd(this.stage);
 	};
 
 	Screen.prototype.render = function(){
 		this.renderer.render(this.stage);   // 描画する
-
 	};
 
 	Screen.prototype.addForward = function(name, percentage){
@@ -98,6 +103,14 @@
 	Screen.prototype.drawForward = function(){
 		this.areaManager.drawForwardArea(this.stage);
 	};
+	Screen.prototype.adjustArea = function(){
+		this.areaManager.adjustForwardArea(this.stage);
+	};
+	
+	Screen.prototype.moveAccessObjects = function(){
+		this.accessObjectManager.move();
+	};
+
 	
 	/**
 	 * 目的地となるエリア
@@ -134,7 +147,14 @@
 	};
 
 
-
+	/**
+	 * エリアのオペレーター
+	 * @param {type} x
+	 * @param {type} y
+	 * @param {type} width
+	 * @param {type} height
+	 * @returns {main_L1.AreaManager}
+	 */
 	AreaManager = function(x, y, width, height){
 		this.forwardAreas = [];
 		this.position = new Position(x, y, width, height);
@@ -145,7 +165,7 @@
 				new ForwardArea(name, percentage)
 		);
 	};
-
+	
 	AreaManager.prototype.drawForwardArea = function(stage){
 		var areaY = 0;
 		
@@ -155,6 +175,15 @@
 			areaY += this.position.height * this.forwardAreas[i].getPercentage() / 100;
 		}
 	};
+	
+	AreaManager.prototype.adjustForwardArea = function(stage){
+		var cell = this.position.height / this.forwardAreas.length;
+		
+		for(var i = 0; i < this.forwardAreas.length; i++){
+			this.forwardAreas[i].drawArea(this.position.x, cell * i);
+		}
+	};
+	
 	
 	
 	/**
@@ -191,8 +220,8 @@
 	 * @param {type} info
 	 * @returns {main_L1.AccessObject}
 	 */
-	AccessObject = function(x, y, color, info){
-		this.width = 800; 
+	AccessObject = function(x, y, color, info, distance){
+		this.distance = distance; 
 		this.pixiObj = new PIXI.Graphics();
 		this.pixiObj.position.x = x;
 		this.pixiObj.position.y = y;
@@ -208,7 +237,7 @@
 	};
 	
 	AccessObject.prototype.move = function(){
-		if(this.pixiObj.position.x >= this.width / 2){
+		if(this.pixiObj.position.x >= this.distance / 2){
 			this.pixiObj.position.x = 0;
 		}
 
@@ -221,8 +250,33 @@
 	};
 	
 	
-	
-	
+	AccessObjectManager = function(logData, distance){
+		this.accessObjects = [];
+		var colors = new Colors();
+
+		// AccessObjectの生成
+		for(var i = 0; i < logData.length; i++){
+			console.log(logData.length);
+		
+			var accessObject = new AccessObject(0, i * 50, colors.getColor(), logData[i], distance);			
+			this.accessObjects.push(accessObject);
+//			screen.stageAdd(accessObject)
+		}
+	};
+
+	AccessObjectManager.prototype.stageAdd = function(stage){
+		for(var i = 0; i < this.accessObjects.length; i++){
+			stage.addChild(this.accessObjects[i].getPixiObject());
+		}
+	};
+
+	AccessObjectManager.prototype.move = function(){
+//		alert(this.accessObjects.length);
+		for(var i = 0; i < this.accessObjects.length; i++){
+			this.accessObjects[i].move();
+		}
+	};
+
 	
 	
 	
@@ -232,40 +286,48 @@
 	 */
 	window.onload = function(){
 
-		var graphicObj = [];
-		var colors = new Colors();
-
-		var screen = new Screen("pixiview");
-
+var graphicObj = []
 		//LogDataの作成
-		var logData = new LogData(obj);
+		var logData = new LogData(log);
 		console.log(logData.getCategory());
 
-		// AccessObjectの生成
-		for(var i = 0; i < obj.length; i++){
-			var ao = new AccessObject(0, i*50, colors.getColor(), obj[i]);
-			
-			graphicObj.push(ao);
-
-			screen.stageAdd(ao)
-		}
+		var screen = new Screen("pixiview", 800, 600, logData);
+		
+		screen.stageAddAccessObject();
 
 		// 目的地の追加
 		screen.addForward('aaa', 10);
 		screen.addForward('bbb', 10);
 		screen.addForward('ccc', 50);
 		screen.addForward('ddd', 10);
+		screen.addForward('eee', 10);
+		screen.addForward('fff', 10);
+		screen.addForward('ggg', 10);
+		screen.addForward('hhh', 10);
+		screen.addForward('iii', 10);
+		screen.addForward('jjj', 10);
+		screen.addForward('kkk', 10);
+		screen.addForward('lll', 10);
+		screen.addForward('mmm', 10);
+		screen.addForward('ooo', 10);
+		screen.addForward('ppp', 10);
+		screen.addForward('qqq', 10);
+		screen.addForward('rrr', 10);
+		
 		// エリア表示
 		screen.drawForward();
+
+		// エリア再設定
+		screen.adjustArea();
 
 		// アニメーション関数を定義する
 		function animate(){
 			requestAnimationFrame(animate); // 次の描画タイミングでanimateを呼び出す
 //			textobj.rotation += 0.01; // テキストを回転する
 
-			for(var j = 0; j < graphicObj.length; j++){
-				graphicObj[j].move();
-			}
+			// アクセスオブジェクトを動かす
+			screen.moveAccessObjects();
+
 			// 描画
 			screen.render();
 		}
