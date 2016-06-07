@@ -23,6 +23,22 @@
 	
 	
 	/**
+	 * 二次元オブジェクト
+	 * @param {type} x
+	 * @param {type} y
+	 * @param {type} width
+	 * @param {type} height
+	 * @returns {undefined}
+	 */
+	Position = function(x, y, width, height){
+		this.x = x;
+		this.y = y;
+		this.width = width;
+		this.height = height;
+	};
+
+
+	/**
 	 * Colorsオブジェクト
 	 * @returns {main_L1.Colors}
 	 */
@@ -46,12 +62,14 @@
 
 	/**
 	 * スクリーンオブジェクト
+	 * 全体的な描画を管理
 	 * @constructor
 	 */
 	Screen = function(domId){
 		this.width = 800;
 		this.height = 600;
-		this.position = [];
+		this.areaManager = new AreaManager(600, 0, 200, this.height);
+//		this.forwardAreas = [];
 
 		// ステージを作る
 		this.stage = new PIXI.Stage(0x000000);
@@ -73,29 +91,68 @@
 
 	};
 
-	Screen.prototype.addForwardPosition = function(name, percentage){
-		this.position.push({
-			name : name,
-			area : (this.height * percentage / 100)
-		});
+	Screen.prototype.addForward = function(name, percentage){
+		this.areaManager.addForwardPosition(name, percentage);
 	};
 
-	Screen.prototype.drawForwardArea = function(){
+	Screen.prototype.drawForward = function(){
+		this.areaManager.drawForwardArea(this.stage);
+	};
+	
+	/**
+	 * 目的地となるエリア
+	 * @param {type} name
+	 * @param {type} percentage
+	 * @returns {main_L1.ForwardArea}
+	 */
+	ForwardArea = function(name, percentage){
+		this.name = name;
+		this.percentage = percentage;
+		
+		// テキストオブジェクトを作る
+		var name = this.name;
+		var style = {font:'bold 14pt Arial', fill:'white'};
+		this.textObject = new PIXI.Text(name, style);		
+	};
+	
+	ForwardArea.prototype.drawArea = function(x, y){
+		this.textObject.position.x = x;
+		this.textObject.position.y = y;
+
+		return this.textObject;
+	};
+	
+	ForwardArea.prototype.getPercentage = function(){
+		return this.percentage;
+	};
+	
+	ForwardArea.prototype.getX = function(){
+		return this.textObject.position.x;
+	};
+	ForwardArea.prototype.getY = function(){
+		return this.textObject.position.y;
+	};
+
+
+
+	AreaManager = function(x, y, width, height){
+		this.forwardAreas = [];
+		this.position = new Position(x, y, width, height);
+	};
+	
+	AreaManager.prototype.addForwardPosition = function(name, percentage){
+		this.forwardAreas.push( 
+				new ForwardArea(name, percentage)
+		);
+	};
+
+	AreaManager.prototype.drawForwardArea = function(stage){
 		var areaY = 0;
-
-		for(var i = 0; i < this.position.length; i++){
-			// テキストオブジェクトを作る
-			var name = this.position[i].name;
-			var style = {font:'bold 14pt Arial', fill:'white'};
-			var textobj = new PIXI.Text(name, style);
-
-
-			textobj.position.x = 600;
-			textobj.position.y = areaY;
-			areaY += this.position[i].area;
-
+		
+		for(var i = 0; i < this.forwardAreas.length; i++){
 			// テキストオブジェクトをステージに乗せる
-			this.stage.addChild(textobj);
+			stage.addChild( this.forwardAreas[i].drawArea(this.position.x, areaY ));
+			areaY += this.position.height * this.forwardAreas[i].getPercentage() / 100;
 		}
 	};
 	
@@ -193,12 +250,13 @@
 			screen.stageAdd(ao)
 		}
 
-		screen.addForwardPosition('aaa', 10);
-		screen.addForwardPosition('bbb', 10);
-		screen.addForwardPosition('ccc', 50);
-		screen.addForwardPosition('ddd', 10);
+		// 目的地の追加
+		screen.addForward('aaa', 10);
+		screen.addForward('bbb', 10);
+		screen.addForward('ccc', 50);
+		screen.addForward('ddd', 10);
 		// エリア表示
-		screen.drawForwardArea();
+		screen.drawForward();
 
 		// アニメーション関数を定義する
 		function animate(){
