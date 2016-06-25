@@ -4,49 +4,80 @@
 		{
 			from : "example.co.jp",
 			category : "ccc",
-			time : "1",
+			time : 1,
 			range : 5
 		},
 		{
 			from : "test.com",
 			category : "ggg",
-			time : "1",
+			time : 1,
 			range : 10
 		},
 		{
 			from : "sample.jp",
 			category : "mmm",
-			time : "2",
+			time : 2,
 			range : 5
 		},
 		{
 			from : "test.jp",
 			category : "kkk",
-			time : "3",
+			time : 2,
 			range : 5
 		},
 		{
 			from : "test.jp",
 			category : "aaa",
-			time : "3",
+			time : 3,
 			range : 5
 		},
 		{
 			from : "test.jp",
 			category : "ppp",
-			time : "3",
+			time : 3,
 			range : 5
 		},
 		{
 			from : "test.jp",
 			category : "bbb",
-			time : "3",
+			time : 3,
 			range : 5
 		},
 		{
 			from : "test.jp",
 			category : "rrr",
-			time : "3",
+			time : 3,
+			range : 5
+		},
+
+		{
+			from : "test.jp",
+			category : "ccc",
+			time : 4,
+			range : 5
+		},
+		{
+			from : "test.jp",
+			category : "ddd",
+			time : 4,
+			range : 5
+		},
+		{
+			from : "test.jp",
+			category : "eee",
+			time : 4,
+			range : 5
+		},
+		{
+			from : "test.jp",
+			category : "aaa",
+			time : 5,
+			range : 5
+		},
+		{
+			from : "test.jp",
+			category : "fff",
+			time : 5,
 			range : 5
 		},
 	];
@@ -285,7 +316,7 @@
 	AccessObject = function(x, y, color, info, distance){
 		this.distance = distance; 
 		this.pixiObj = new PIXI.Graphics();
-		this.pixiObj.position.x = x;
+		this.pixiObj.position.x = x + (-200 * info.time);
 		this.pixiObj.position.y = y;
 
 		this.pixiObj.beginFill(color, 1);
