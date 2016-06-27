@@ -25,8 +25,37 @@
 			time : "3",
 			range : 5
 		},
+		{
+			from : "test.jp",
+			category : "aaa",
+			time : "3",
+			range : 5
+		},
+		{
+			from : "test.jp",
+			category : "ppp",
+			time : "3",
+			range : 5
+		},
+		{
+			from : "test.jp",
+			category : "bbb",
+			time : "3",
+			range : 5
+		},
+		{
+			from : "test.jp",
+			category : "rrr",
+			time : "3",
+			range : 5
+		},
 	];
 	
+	var util = {
+		getRandomNum: function(min, max){
+			return Math.floor( Math.random() * (max - min + 1) ) + min;
+		}
+	};
 	
 	/**
 	 * 二次元オブジェクト
@@ -81,8 +110,10 @@
 	Screen = function(domId, width, height, logData){
 		this.width = width;
 		this.height = height;
-		this.areaManager = new AreaManager(this.width / 4 * 3, 0, 200, this.height);
-		this.accessObjectManager = new AccessObjectManager(logData, this.height);
+		var distance = this.width / 4 * 3;
+		
+		this.areaManager = new AreaManager(distance, 0, 200, this.height);
+		this.accessObjectManager = new AccessObjectManager(logData, distance);
 
 		// ステージを作る
 		this.stage = new PIXI.Stage(0x000000);
@@ -113,16 +144,19 @@
 		this.areaManager.adjustForwardArea(this.stage);
 	};
 	
-	Screen.prototype.moveAccessObjects = function(){
-		var category = this.accessObjectManager.next();
-		var goalY;
-		if(category){
-			goalY = this.areaManager.getAssignArea(category)
-			this.accessObjectManager.setNextForward(goalY);
-		}else{
-//			alert("end!");
-		}
+	Screen.prototype.setDestination = function(){
+		var category = undefined;
 
+		do {
+			category = this.accessObjectManager.next();
+			if(category){
+				goalY = this.areaManager.getAssignArea(category);
+				this.accessObjectManager.setNextForward(util.getRandomNum(0, this.height), goalY);
+			}
+		}while(category);
+	};
+	
+	Screen.prototype.moveAccessObjects = function(){
 		this.accessObjectManager.move();
 	};
 
@@ -260,25 +294,47 @@
 
 		this.forwardX = 10;
 		this.forwardY = 0;
+		this.destinationY = 0;
+		this.moveY = 0;
 		this.from = info.from;
 		this.category = info.category;
 	};
 	
 	AccessObject.prototype.move = function(){
 		if(this.pixiObj.position.x >= this.distance){
-			this.pixiObj.position.x = 0;
+			return false;
 		}
 
+//		this.moveY += this.forwardY * 20;
+//		if('moveY', this.moveY >= 1){
+//			console.log(this.moveY);
+//			this.pixiObj.position.y += this.moveY * 5;
+//			this.moveY = 0;
+//		}
+
 		this.pixiObj.position.x += this.forwardX;
-		this.pixiObj.position.y += this.forwardY;
+		this.pixiObj.position.y += this.forwardY * 5;		
+
+		return true;
 	};
 	
 	AccessObject.prototype.getPixiObject = function(){
 		return this.pixiObj;
 	};
 
+	AccessObject.prototype.setDestinationY = function(y){
+		this.destinationY = parseInt(y);
+		this.forwardY = (this.destinationY - this.pixiObj.position.y) / (this.distance - this.pixiObj.position.x);
+
+		console.log(this.category, (this.destinationY - this.pixiObj.position.y), (this.distance - this.pixiObj.position.x), this.forwardY)
+	};
+	
 	AccessObject.prototype.setY = function(y){
 		this.pixiObj.position.y = y;
+	};
+
+	AccessObject.prototype.clear = function(){
+		this.pixiObj.clear();
 	};
 
 
@@ -289,29 +345,30 @@
 		var colors = new Colors();
 
 		// AccessObjectの生成
-		for(var i = 0; i < logData.length; i++){
+		for(var i in logData){
 			console.log(logData.length);
-		
+
 			var accessObject = new AccessObject(0, i * 50, colors.getColor(), logData[i], distance);			
 			this.accessObjects.push(accessObject);
-//			screen.stageAdd(accessObject)
 		}
 	};
 
 	AccessObjectManager.prototype.stageAdd = function(stage){
-		for(var i = 0; i < this.accessObjects.length; i++){
+		for(var i in this.accessObjects){
 			stage.addChild(this.accessObjects[i].getPixiObject());
 		}
 	};
 
 	AccessObjectManager.prototype.move = function(){
-		for(var i = 0; i < this.accessObjects.length; i++){
-			this.accessObjects[i].move();
+		for(var i in this.accessObjects){
+			if(this.accessObjects[i] && !this.accessObjects[i].move()){
+				this.accessObjects[i].clear();
+				delete this.accessObjects[i];
+			}
 		}
 	};
 
 	AccessObjectManager.prototype.next = function(){
-//		console.log('current', this.current);
 		if(this.accessObjects.length  >= this.current + 1){
 			var target = this.accessObjects[this.current].category;
 			return target;
@@ -319,8 +376,9 @@
 			return null;
 		}
 	};
-	AccessObjectManager.prototype.setNextForward = function(goalY){
-		this.accessObjects[this.current].setY(goalY)
+	AccessObjectManager.prototype.setNextForward = function(y, goalY){
+		this.accessObjects[this.current].setY(y);
+		this.accessObjects[this.current].setDestinationY(goalY);
 		this.current++;
 	};
 
@@ -365,6 +423,9 @@
 
 		// エリア再設定
 		screen.adjustArea();
+		
+		// 目的地の設定
+		screen.setDestination();
 
 		// アニメーション関数を定義する
 		function animate(){
