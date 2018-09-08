@@ -3,5 +3,8 @@ package main
 import "fmt"
 
 func main() {
-	fmt.Println("Hello, World")
+
+	var x float32 = 3.56789
+
+	fmt.Println(x)
 }
