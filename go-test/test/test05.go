@@ -9,5 +9,5 @@ func main() {
 
 	m[12] = "AAA"
 
-	fmt.Println(m[12], m)
+	fmt.Println(m[12], m, len(m))
 }
