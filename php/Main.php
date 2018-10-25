@@ -7,13 +7,13 @@ $number = 10;
 $counter = new Counter();
 
 
-for($i=0;$i<$number;$i++){
+for ($i = 0; $i < $number; $i++) {
 	$counter->push();
 }
 
- if($counter->displayValue() == $number){
+if ($counter->displayValue() == $number) {
 	echo 'OK';
- }else {
- 	echo 'NG';
- }
+} else {
+	echo 'NG';
+}
 echo PHP_EOL;
